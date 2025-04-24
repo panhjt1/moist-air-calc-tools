@@ -5,7 +5,7 @@ classdef moistAir < matlab.mixin.Copyable
     properties(Access=private)
         % These private properties are to avoid the warning of accessing
         % another variable in its setting method. Else without this
-        % intermediate level, checking the length of t, rh and q in their
+        % intermediate layer, checking the length of t, rh and q in their
         % setting method cause an warning and unpredicted behaviour
         Priv_t
         Priv_W
@@ -91,7 +91,7 @@ classdef moistAir < matlab.mixin.Copyable
         function flag = check_accordance(tlen, rhlen, qmlen)
             % to check if length are in accordance
             if (tlen == rhlen) || (tlen == 1) || (rhlen == 1)
-                if (tlen == qmlen) || (qmlen == 1)
+                if (tlen == qmlen) || (qmlen == 1) || (tlen == 1)
                     flag = true;
                 else
                     error('different length of qm and rh, t!')
@@ -99,6 +99,81 @@ classdef moistAir < matlab.mixin.Copyable
             else
                 error('different length of t and rh!')
             end
+        end
+        function [fig, hgt] = plot_enth_moisture_diagram(varargin)
+            fig = figure();
+            ax = gca;
+            % range
+            rh_array = 0: 0.1: 1;
+            t = -30: 1: 65;
+
+            % initialize, calculate constant RH lines
+            i = 1;
+            [~,tt] = meshgrid(rh_array,t);
+            W = tt;
+            for rh = rh_array
+                air = moistAir(t, rh);
+                W(:,i) = air.W;
+                i = i+1;
+            end
+
+            % adjust color and display
+            Z = zeros(size(tt));
+            h = surf(W, t, Z, 'FaceAlpha', 0, 'EdgeColor', 'k', 'EdgeAlpha',0.1);
+            view(2)
+            i=1;
+            xlim(ax,[0, 0.042])
+            ylim(ax,[-30, 65])
+            % create Transform obj
+            hgt = hgtransform;
+            % Shear matrix
+            transformMatrix = eye(4);
+            sh_y = 10/0.05; % tan alpha
+            transformMatrix(2,1) = sh_y;
+            % apply shear
+            hgt.Matrix = transformMatrix;
+            % and surf to transform
+            h.Parent = hgt;
+            % hgt.Matrix = transformMatrix;
+
+            % get RH tag text and transform their position 
+            stagger = true;
+            for rh = rh_array
+                air = moistAir(t, rh);
+                index = floor(length(t) * 0.8);
+                stagger_mag = 5;
+                txt = text(air.W(index-stagger*stagger_mag-i), air.t(index-stagger*stagger_mag-i), ...
+                    sprintf('%.0f%%',rh*100),HorizontalAlignment="center",FontSize=7);
+                txt.Parent = hgt;
+                i = i+1;
+                % a flag to place tags in staggered position
+                stagger = ~stagger;
+            end
+
+            % add a rim line of 100%RH
+            line(hgt, air.W,air.t);
+            % add callback to change axis label, because this diagram is
+            % not orthogonal!
+            fig.WindowButtonMotionFcn = @wbmcb;
+            fig.WindowScrollWheelFcn  = @figScroll;
+            function wbmcb(src,event)
+                ax.YTickLabel = cellstr(string((ax.YTick-ax.XLim(1)*sh_y).'));
+            end
+            function figScroll(src,event)
+                ax.YTickLabel = cellstr(string((ax.YTick-ax.XLim(1)*sh_y).'));
+            end
+            
+            
+            
+            % plot points
+            for i = 1:nargin
+                obj_air = varargin{i};
+                scatter(obj_air.W, obj_air.t,'x','LineWidth',1,'Parent',hgt);       
+            end
+            % clean up other settings
+            ax.Box = "on";
+            ax.XGrid ="off";
+            ax.YGrid ="off";
         end
     end
 
@@ -112,7 +187,7 @@ classdef moistAir < matlab.mixin.Copyable
             end
         end
 
-        % set methods
+        %% set methods
         function set.t(obj,tin)
             moistAir.check_accordance(length(tin), length(obj.W), length(obj.qm));
             if tin > -273.15
@@ -151,19 +226,19 @@ classdef moistAir < matlab.mixin.Copyable
         end
         function set.qm(obj,qmin)
             moistAir.check_accordance(length(obj.t), length(obj.W), length(qmin));
-            obj.Priv_qm = max(qmin,1e-7);
+            obj.Priv_qm = max(qmin, 1e-7);
         end
         function set.qv(obj,qvin)
             obj.qm = qvin .* obj.rho;
         end
-        % get methods to update dependent properties
+        %% get methods to update dependent properties
         function t    = get.t(obj)
             t = obj.Priv_t;
         end
         function W    = get.W(obj)
             W = obj.Priv_W;
         end
-        function qm    = get.qm(obj)
+        function qm   = get.qm(obj)
             qm = obj.Priv_qm;
         end
         function T    = get.T(obj)
@@ -213,6 +288,7 @@ classdef moistAir < matlab.mixin.Copyable
         function rh   = get.rh(obj)
             rh = obj.pw ./ obj.pws;
         end
+        %% utility funcs
         % check saturation and update property
         function obj = update_to_sat(obj)
             % If saturated, the mixture need special treatment on dew/frost
@@ -223,8 +299,12 @@ classdef moistAir < matlab.mixin.Copyable
             % h_ice = -333.4 + 2.1*t
             % WARNING: No limit is put on input range, be careful with
             % the input temperature!
-            if obj.rh > 1
-                warning("condense/sublimation occurs, careful with input");
+            if length(obj.t)+length(obj.W)+length(obj.qm)>3
+                error("Array operation is not available to this func yet, consider extract a single state point and operate")
+            end
+            if obj.rh < 1
+            else
+                %                 warning("condense/sublimation occurs, careful with input");
                 tol_rel = 1e-3;
                 max_iter = 100;
                 old_t = 1e6;
@@ -248,7 +328,7 @@ classdef moistAir < matlab.mixin.Copyable
                     end
                 end
                 obj.qm = obj.qm.*(1 - (obj.W - obj.Ws)./(1 + obj.W));
-                obj.W = obj.Ws;
+                obj.W = min(obj.Ws,obj.W);
             end
         end
         % adding moisture to ma (= const P evaporation)
@@ -256,6 +336,9 @@ classdef moistAir < matlab.mixin.Copyable
             % qm_w: mass of water added in kg/s
             % t_w: temperature of water
             % phase: vapor by default
+            if length(obj.t) + length(obj.W) + length(obj.qm) > 3
+                error("Array operation is not available to this func yet, consider extract a single state point and operate")
+            end
             if nargin == 3
                 phase = "v";
             elseif nargin == 4
@@ -276,8 +359,9 @@ classdef moistAir < matlab.mixin.Copyable
             obj.qm = obj.qm + qm_w;
             obj = obj.update_to_sat();
         end
-        % overload "+" to merge two streams
+        %% Operator Overloading        
         function obj = plus(obj1, obj2)
+            % overload "+" to merge two streams
             new_qm   = obj1.qm + obj2.qm;
             new_h_da = (obj1.h .* obj1.qm + obj2.h .* obj2.qm) ./ (obj1.qm ./ (1 + obj1.W) + obj2.qm ./ (1 + obj2.W));
             new_W    = (obj1.qm .* (1-(1 ./ (1 + obj1.W))) + obj2.qm .* (1-(1 ./ (1 + obj2.W)))) ...
@@ -290,20 +374,20 @@ classdef moistAir < matlab.mixin.Copyable
                 obj = obj.update_to_sat();
             end
         end
-        % overload "*" to manipulate qm
         function obj = mtimes(obj1, obj2)
+            % overload "*" to manipulate qm
             % obj1 is const
             if isa(obj1,'double') && isa(obj2,'moistAir')
                 obj = obj2.copy;
                 obj.qm = obj.qm * obj1;
-                % obj2 is const
+            % obj2 is const
             elseif isa(obj1,'moistAir') && isa(obj2,'double')
                 obj = obj1.copy;
                 obj.qm = obj.qm * obj2;
             end
         end
-        % overload subscript indexing
         function sref = subsref(obj, s)
+            % overload subscript indexing
             type = s.type;
             switch type
                 case '()'
@@ -311,16 +395,21 @@ classdef moistAir < matlab.mixin.Copyable
                     len_t  = length(obj.t);
                     len_rh = length(obj.rh);
                     len_qm = length(obj.qm);
+                    tmp_t  = obj.t;
+                    tmp_rh = obj.rh;
+                    tmp_qm = obj.qm;
                     len_max=max([len_t,len_rh,len_qm]);
                     if len_t < len_max
                         tmp_t  = obj.t .* ones(len_max,1);
-                    elseif len_rh < len_max
+                    end
+                    if len_rh < len_max
                         tmp_rh = obj.rh .* ones(len_max,1);
-                    elseif len_qm < len_max
+                    end
+                    if len_qm < len_max
                         tmp_qm = obj.qm .* ones(len_max,1);
                     end
-                    sref = moistAir(obj.t(index), obj.rh(index));
-                    sref.qm = obj.qm(index);
+                    sref = moistAir(tmp_t(index), tmp_rh(index));
+                    sref.qm = tmp_qm(index);
                 case '{}'
                     sref = builtin('subsref',obj,s);
                 case '.'
