@@ -71,39 +71,47 @@ air_stream_2 = moistAir(30, 0.5);
 moistAir.get_eq_air(air_stream_1, air_stream_2, 0.5);
 ```
 
-## Array usage
-% create and index stream by arrays of properties.
-% note array length of different properties must be either equal or 1  
-% 1: temp in array, RH, qm all same
+## 数组化使用 Array usage
+直接用类似于数组的方式创建或者索引一系列状态的湿空气  
+需要注意的是温度、湿度等性质的数组长度必须统一，或者长度为1（代表性质保持相同）  
+Create and index stream by arrays of properties.
+Note array length of different properties must be either equal or 1  
+用温度数组创建湿空气，相对湿度保持相同，并索引其中的第二个状态点。  
+Temp in array, RH, qm all same
 ```
 air_stream = moistAir([20, 30, 40], 0.3);
 air_stream(2) % get stream t=30,rh=0.3
 ```
-% 2: temp and RH in array
+温度和相对湿度都采用数组创建  
+Temp and RH in array
 ```
 air_stream = moistAir([20, 30, 40], [0.3, 0.4, 0.5]);
 air_stream(2) % get stream t=30,rh=0.4
 ```
-% 3: temp and RH single, qm in array
+温度和湿度保持为定值，流量变化  
+Temp and RH single, qm in array
 ```
 air_stream = moistAir(20, 0.5);
 air_stream.qm = [1,2,3];
 air_stream(3) % get stream t=20, rh=0.5, qm=3
 ```
-% "+" and "*" works in array form
-% note that here behavior of "+" and "*"  is a little bit different
-% "+" extend other properties to same dimension while "*" does not
+在数组中用+和*。二者的行为有一些不同，用+的时候会把所有属性的数组长度变成相同的，*则不会  
+"+" and "\*" works in array form  
+Note that here behavior of "+" and "\*"  is a little bit different
+"+" extend other properties to same dimension while "\*" does not
 ```
 air_stream = moistAir(20, 0.5);
 air_stream.qm = [1,2,3];
 air_stream + air_stream;
 air_stream * 2;
 ```
-% following functions can't work in array form yet, consider extract state point first
+update_to_sat函数当前没有在数组状态下使用的方法，可以先从数组中把某个状态索引出来后再使用这个函数  
+Following functions can't work in array form yet, consider extract state point first
+```
 % air_stream = moistAir([20, 30, 40], [0.3, 0.4, 1.5])
 % air_stream.update_to_sat
-
-## Draw state point on diagram
+```
+## 绘制焓湿图 Draw state point on diagram
 ```
 air_stream_1 = moistAir([20, 30, 40], 0.7);
 air_stream_2 = moistAir([25,35,45], 0.5);
