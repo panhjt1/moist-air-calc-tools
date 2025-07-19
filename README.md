@@ -1,5 +1,6 @@
 # moistAir类使用说明  Demo of moistAir class usage
-![效果展示]([image.png](https://github.com/panhjt1/moist-air-calc-tools/blob/master/diagram_image.png))  
+<img width="486" height="388" alt="图片" src="https://github.com/user-attachments/assets/5c524f5a-eb7c-47fc-a4d2-d17540e960d4" />  
+
 本工具的物性参数计算方法都来自于ASHARE handbook，和NIST的refprop数据库焓值基准不是一套，使用时需要注意基准。如果有问题请联系panhjt@foxmail.com。
 ## 创建流股 Create stream
 用摄氏度和相对湿度来创建流股。默认的流量是1kg/s，可以后续修改。  Create stream using degC and relative moisture. By default the flow rate is 1kg/s  
