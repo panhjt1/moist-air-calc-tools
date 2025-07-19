@@ -1,7 +1,7 @@
 # moistAir类使用说明  Demo of moistAir class usage
 <img width="486" height="388" alt="图片" src="https://github.com/user-attachments/assets/5c524f5a-eb7c-47fc-a4d2-d17540e960d4" />  
 
-本工具为湿空气性质计算及画图工具，可以实现查询湿空气性质、通过“+”操作计算空气混合过程、在画出焓湿图并在其上进行标点等功能。本工具的物性参数计算方法都来自于ASHARE handbook，和NIST的refprop数据库焓值基准不是一套，使用时需要注意基准。如果有问题请联系panhjt@foxmail.com。
+本工具为湿空气性质计算及画图工具，可以实现查询湿空气性质、通过“+”操作计算空气混合过程、在画出焓湿图并在其上进行标点等功能，2024a测试可运行。moistAir.m文件放入工作路径即可使用，.mlx文件为本Demo的实时脚本版。本工具的物性参数计算方法都来自于ASHARE handbook，和NIST的refprop数据库焓值基准不是一套，使用时需要注意基准。如果有问题请联系panhjt@foxmail.com。
 ## 创建流股 Create stream
 用摄氏度和相对湿度来创建流股。默认的流量是1kg/s，可以后续修改。  Create stream using degC and relative moisture. By default the flow rate is 1kg/s  
 ```air_30C_50RH = moistAir(30, 0.5);```  
